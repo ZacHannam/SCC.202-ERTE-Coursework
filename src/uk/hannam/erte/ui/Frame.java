@@ -12,6 +12,11 @@ public class Frame extends JFrame {
         super("Extended Reaction Time Experiment");
         super.setSize(new Dimension(WIDTH, HEIGHT));
         super.setVisible(true);
+        super.setResizable(false);
+
+        super.add(new DescriptionPanel());
+        super.add(new DrawPanel());
+        super.add(new ReactionButton());
     }
 
 }
