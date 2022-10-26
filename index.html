@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+	<style>
+		button { 
+			height: 50px;
+			width: 300px;
+		}
+
+		html, body {
+			height: 100%;
+			background-color: #89cff0;
+		}
+
+		html {
+			display: table;
+			margin: auto;
+		}
+
+		body {
+			display: table-cell;
+			vertical-align: middle;
+		}
+
+		canvas {
+			background-color: #ffffff;
+		}
+	</style>
+	<head>
+		<title>Human Reaction Time + Cognitive Thinking</title>
+	</head>
+	<body>
+		<center><header>
+			<h3>SCC.202 - Coursework</h3>
+
+			<canvas id="instructionCanvas" width="300" height="50" style="border:1px solid #d3d3d3;">
+			Your browser does not support the HTML canvas tag.</canvas>
+
+			<br>
+
+			<canvas id="drawCanvas" width="300" height="300" style="border:1px solid #d3d3d3;">
+			Your browser does not support the HTML canvas tag.</canvas>
+
+			<br>
+
+			<button id="buttonA" style="border:1px solid #d3d3d3;" onclick="onClick()">START</button>
+		</header></center>
+
+		<script>
+
+			const colors = ["pink", "orange", "red", "magenta", "blue", "green"]
+			const shapes = ["triangle", "circle", "square"]
+
+			const shapeSize = 20;
+			const numberOfRounds = 10;
+
+			class MatchingObject {
+
+				constructor(paramColor, paramShape) {
+					
+					this.color = paramColor;
+					this.shape = paramShape;
+				}
+
+			}
+
+			class Position {
+
+				constructor(paramX, paramY) {
+
+					this.x = paramX;
+					this.y = paramY;
+					this.corners = [paramX, paramY, paramX+shapeSize, paramY+shapeSize];
+				}
+
+			}
+
+			var results = [];
+			var gameState = 0;
+			var gameObject;
+			var timer = null;
+			var intervalID;
+			var currentRound = 0;
+			var activeShapes = []
+
+			function onClick() {
+
+				if(gameState == 0) {
+					gameObject = generateRandomObject();
+					drawDescription(gameObject);
+
+					gameState++;
+
+				}
+				if(gameState == 1) {
+
+					changeButtonText("GUESS");
+					intervalID = setInterval(bg, 500);
+
+					gameState++;
+				}
+
+				if(gameState == 2) {}
+
+				if(gameState == 3) {
+
+					const d = new Date().getTime();
+
+					let time = d - timer;
+
+					logResult(time);
+
+
+					gameState++;
+
+					gameStop();
+					writeDescription(time + "ms");
+					changeButtonText("");
+
+					if(currentRound == numberOfRounds - 1) {
+
+						gameState = 5;
+
+					} else {
+
+						setTimeout(nextRound, 3000);
+					}
+
+
+				}
+
+				if(gameState == 4) {
+
+					currentRound++;
+
+				}
+
+				if(gameState == 5) {
+
+					displayTimes();
+
+				}
+
+			}
+
+			function removeFirstItem() {
+				activeShapes.splice(0, 1);
+			}
+
+			function undrawObject(paramPosition) {
+
+				element = document.getElementById("drawCanvas");
+				context = element.getContext("2d");
+
+				context.fillStyle = "white";
+				context.fillRect(paramPosition.x, paramPosition.y , shapeSize, shapeSize);
+
+
+
+				removeFirstItem();
+
+			}
+
+			function isOverlap(paramX, paramY) {
+				for(var i = 0; i < activeShapes.length; i++) {
+
+
+					var rec1 = activeShapes[i].corners;
+					var rec2 = [paramX, paramY, paramX+shapeSize, paramY+shapeSize];
+
+					var widthIsPositive = Math.min(rec1[2], rec2[2]) > Math.max(rec1[0], rec2[0]);
+        			var heightIsPositive = Math.min(rec1[3], rec2[3]) > Math.max(rec1[1], rec2[1]);
+
+        			if ( widthIsPositive && heightIsPositive) {
+        				return true;
+        			}
+
+				}
+				return false;
+			}
+
+			function displayTimes() {
+
+				clearAllCanvas();
+				writeDescription("Results");
+
+				var element = document.getElementById("drawCanvas");
+				var context = element.getContext("2d");
+
+				for(var i = 0; i < numberOfRounds; i++) {
+					drawText(context, results[i], (70 * Math.floor(i / 10)), ((i%10)+1) * 25);
+				}
+
+
+			}
+
+			function timeout() {
+
+				if(gameState >= 4) {
+					return;
+				}
+
+				gameState = 4;
+
+
+				gameStop();
+
+				writeDescription("Round not counted: you lost");
+
+				setTimeout(nextRound, 3000);
+
+
+			}
+
+			function gameStop() {
+
+
+				clearInterval(intervalID);
+				timer = null;
+
+				clearAllCanvas();
+			
+			}
+
+			function nextRound() {
+				clearAllCanvas();
+				gameState = 0;
+				onClick();
+			}
+
+			function logResult(paramTime) {
+
+				results.push(paramTime);
+
+
+			}	
+
+			function bg() {
+
+				var element = document.getElementById("drawCanvas");
+				var context = element.getContext("2d");
+
+				if(activeShapes.length >= 5) {
+					undrawObject(activeShapes[0]);
+				}
+
+				let object = drawRandomObject(context);
+
+				if(object.shape == gameObject.shape && object.color == gameObject.color) {
+
+					gameState = 3;
+
+					if(timer == null) {
+						timer = new Date().getTime();
+					}
+
+					setTimeout(timeout, 1500);
+
+				}
+			}
+
+			function changeButtonText(paramText) {
+				
+				var b = document.getElementById("buttonA");
+				b.innerHTML = paramText;
+
+
+			}
+
+			function drawRandomObject(paramContext) {
+
+				var randomX = Math.floor(Math.random() * (300 - shapeSize));
+				var randomY = Math.floor(Math.random() * (300 - shapeSize));
+
+				while(isOverlap(randomX, randomY)) {
+					randomX = Math.floor(Math.random() * (300 - shapeSize));
+					randomY = Math.floor(Math.random() * (300 - shapeSize));
+				}
+
+				let object = generateRandomObject();
+				activeShapes.push(new Position(randomX, randomY));
+
+				drawObject(paramContext, object, randomX, randomY);
+
+				return object;
+
+			}
+
+			function drawDescription(paramObject) {
+				var element = document.getElementById("instructionCanvas");
+				var context = element.getContext("2d");
+
+				drawObject(context, paramObject, 15, 15);
+				drawText(context, (paramObject.color + " " + paramObject.shape), 50, 35);
+			}
+
+			function writeDescription(paramText) {
+				var element = document.getElementById("instructionCanvas");
+				var context = element.getContext("2d");
+
+				drawText(context, paramText, 120, 35);
+			}
+
+			function drawText(paramContext, paramText, paramX, paramY) {
+				paramContext.fillStyle = "black";
+				paramContext.font = "20px Arial";
+				paramContext.fillText(paramText, paramX, paramY);
+			}
+
+			function drawObject(paramContext, paramObject, paramX, paramY) {
+				switch(paramObject.shape) {
+					case "triangle":
+						drawTriangle(paramContext, paramObject.color, paramX, paramY, shapeSize);
+					break;
+
+					case "circle":
+						drawCircle(paramContext, paramObject.color, paramX, paramY, shapeSize);
+					break;
+
+					case "square":
+						drawSquare(paramContext, paramObject.color, paramX, paramY, shapeSize);
+					break;
+				}
+			}
+
+
+			function generateRandomObject() {
+				let color = getRandomColor();
+				let shape = getRandomShape();
+
+				return new MatchingObject(color, shape);
+			}
+
+
+			function drawCircle(paramCtx, paramColor, paramX, paramY, paramSize) {
+				paramCtx.beginPath();
+				paramCtx.arc(paramSize/2 + paramX, paramSize/2 + paramY, paramSize/2 ,0,2*Math.PI);
+				paramCtx.closePath();
+				paramCtx.fillStyle = paramColor;
+				paramCtx.fill();
+			}
+
+
+			function drawSquare(paramCtx, paramColor, paramX, paramY, paramSize) {
+				paramCtx.fillStyle = paramColor;
+				paramCtx.fillRect(paramX, paramY, paramSize, paramSize);
+			}
+
+			function drawTriangle(paramCtx, paramColor, paramX, paramY, paramSize) {
+				paramCtx.beginPath();
+				paramCtx.moveTo(paramX, paramY + paramSize);
+				paramCtx.lineTo(paramX + paramSize/2, paramY);
+				paramCtx.lineTo(paramX + paramSize, paramY + paramSize);
+				paramCtx.closePath();
+				paramCtx.fillStyle = paramColor;
+				paramCtx.fill();
+			}
+
+			function getRandomColor() {
+				const randomIndex = Math.floor(Math.random() * colors.length);
+    			const item = colors[randomIndex];
+    			return item;
+			}
+
+			function getRandomShape() {
+				const randomIndex = Math.floor(Math.random() * shapes.length);
+    			const item = shapes[randomIndex];
+    			return item;
+			}
+
+			function clearAllCanvas() {
+				var element = document.getElementById("instructionCanvas");
+				var context = element.getContext("2d");
+
+				clearCanvas(context, 300, 50);
+
+				element = document.getElementById("drawCanvas");
+				context = element.getContext("2d");
+
+				clearCanvas(context, 300, 300);
+			}
+
+			function clearCanvas(paramCtx, width, height) {
+				paramCtx.fillStyle = "white";
+				paramCtx.fillRect(0, 0 , width, height);
+			}
+
+			document.onkeydown = onKey;
+			function onKey(e) {
+				if (e == null) {
+					e = window.event;
+				}
+				console.log("a");
+				switch (e.which || e.charCode || e.keyCode) {
+					case 32: // space
+	         			onClick();
+	         			break;
+	         	}
+	         }
+		</script> 
+	</body>
+</html>
+
